@@ -28,8 +28,7 @@ type state1 struct {
 }
 
 type state2 struct {
-	x   int
-	y   int
+	state1
 	aim int
 }
 

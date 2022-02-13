@@ -1,13 +1,12 @@
-package advent2021
+package utils
 
 import (
 	"strconv"
-	"strings"
 )
 
-func StringToIntSlice(input string) []int {
+func StringSliceToIntSlice(input []string) []int {
 	var intSlice []int
-	for _, str := range strings.Split(strings.TrimSpace(input), "\n") {
+	for _, str := range input {
 		converted, err := strconv.Atoi(str)
 		if err != nil {
 			panic(err)

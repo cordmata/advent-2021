@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
-	"github.com/cordmata/advent2021"
+	"github.com/cordmata/advent-2021/utils"
 )
 
 var (
@@ -69,7 +70,7 @@ func part2(input []int) int {
 	return part1(windowSums)
 }
 
-var exampleInput = advent2021.StringToIntSlice(`199
+var exampleInput = utils.StringSliceToIntSlice(strings.Split(`199
 200
 208
 210
@@ -78,9 +79,9 @@ var exampleInput = advent2021.StringToIntSlice(`199
 240
 269
 260
-263`)
+263`, "\n"))
 
-var actualInput = advent2021.StringToIntSlice(`100
+var actualInput = utils.StringSliceToIntSlice(strings.Split(`100
 125
 124
 127
@@ -2079,4 +2080,4 @@ var actualInput = advent2021.StringToIntSlice(`100
 10041
 10040
 10041
-10044`)
+10044`, "\n"))
