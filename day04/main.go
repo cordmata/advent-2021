@@ -7,6 +7,7 @@ import (
 	"github.com/cordmata/advent-2021/utils"
 )
 
+// https://adventofcode.com/2021/day/4
 func main() {
 	log.Println("Part1 example:", part1(exampleInput), "== 4512")
 	log.Println("Part1 winner:", part1(actualInput), "== 58412")
