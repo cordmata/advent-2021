@@ -33,7 +33,7 @@ func part2(in string) int {
 	for _, h := range hopper {
 		for _, b := range boards {
 			b.playNumber(h)
-			if b.isWinner() {
+			if _, ok := boardsWon[b]; !ok && b.isWinner() {
 				boardsWon[b] = true
 				if len(boardsWon) == len(boards) {
 					return b.score() * h
