@@ -1,41 +1,122 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"strconv"
 	"strings"
 )
 
 // https://adventofcode.com/2021/day/3
 func main() {
 
-	example1 := 198
-	if response := part1(exampleInput); response != example1 {
-		log.Fatalln("[ERROR] Part 1 failed, expected", example1, "but got", response)
+	exampleReport := generateReport(exampleInput)
+	actualReport := generateReport(actualInput)
+
+	exampleConsumption := 198
+	log.Println("Part 1 example:", exampleReport.powerConsumption(), "==", exampleConsumption)
+	log.Println("Part 1 answer:", actualReport.powerConsumption())
+
+	exampleLifeSupportRating := 230
+	log.Println("Part 2 example:", exampleReport.lifeSupportRating(), "==", exampleLifeSupportRating)
+	log.Println("Part 2 answer:", actualReport.lifeSupportRating())
+
+}
+
+type report struct {
+	gamma                 int
+	epsilon               int
+	oxygenGeneratorRating int
+	co2ScrubberRating     int
+}
+
+func (r report) powerConsumption() int {
+	return r.gamma * r.epsilon
+}
+
+func (r report) lifeSupportRating() int {
+	return r.oxygenGeneratorRating * r.co2ScrubberRating
+}
+
+func invertBitString(in string) string {
+	var inverted string
+	for _, r := range in {
+		switch r {
+		case '0':
+			inverted += "1"
+		case '1':
+			inverted += "0"
+		default:
+			panic("unexpected format")
+		}
 	}
-	log.Println("The answer to part 1 is:", part1(actualInput))
+	return inverted
+}
 
-	example2 := 0
-	if response := part2(exampleInput); response != example2 {
-		log.Fatalln("[ERROR] Part 2 failed, expected", example2, "but got", response)
+func generateReport(in []string) report {
+	gamma := mostCommonBits(in)
+	epsilon := invertBitString(gamma)
+	oxygenGeneratorRating := computeRating(in, 0, mostCommonBits)
+	co2scrubber := computeRating(in, 0, leastCommonBits)
+	return report{
+		gamma:                 parseInt(gamma),
+		epsilon:               parseInt(epsilon),
+		oxygenGeneratorRating: parseInt(oxygenGeneratorRating),
+		co2ScrubberRating:     parseInt(co2scrubber),
 	}
-	log.Println("The answer to part 2 is:", part2(actualInput))
-
 }
 
-func part1(input []string) int {
-	width := len(input[0])
-	fmt.Println("It's", width, "bits wide")
-	return 0
+func computeRating(input []string, colIndex int, strategy func([]string) string) string {
+	var filtered []string
+	common := strategy(input)
+	for _, s := range input {
+		if []rune(s)[colIndex] == []rune(common)[colIndex] {
+			filtered = append(filtered, s)
+		}
+	}
+	if len(filtered) == 1 {
+		return filtered[0]
+	} else {
+		return computeRating(filtered, colIndex+1, strategy)
+	}
 }
 
-func part2(input []string) int {
-	return 1
+func leastCommonBits(rows []string) string {
+	return invertBitString(mostCommonBits(rows))
 }
 
-func splitlines(s string) []string { return strings.Split(s, "\n") }
+func mostCommonBits(rows []string) string {
+	var mostCommon string
+	zeroCounts := make([]int, len(rows[0]))
+	for _, str := range rows {
+		for i, char := range str {
+			if char == '0' {
+				zeroCounts[i]++
+			}
+		}
+	}
+	num_rows := len(rows)
+	for _, zeros := range zeroCounts {
+		ones := num_rows - zeros
+		if zeros > ones {
+			mostCommon += "0"
+		} else {
+			mostCommon += "1"
+		}
+	}
+	return mostCommon
+}
 
-var exampleInput = splitlines(`00100
+func parseInt(in string) int {
+	dec, err := strconv.ParseInt(in, 2, 0)
+	if err != nil {
+		log.Fatalln("Couldn't decore int:", err)
+	}
+	return int(dec)
+}
+
+func splitLines(s string) []string { return strings.Split(s, "\n") }
+
+var exampleInput = splitLines(`00100
 11110
 10110
 10111
@@ -48,7 +129,7 @@ var exampleInput = splitlines(`00100
 00010
 01010`)
 
-var actualInput = splitlines(`101000111100
+var actualInput = splitLines(`101000111100
 000011111101
 011100000100
 100100010000
