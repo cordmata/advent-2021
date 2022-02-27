@@ -8,14 +8,14 @@ import (
 )
 
 const p1Example = 5
-const p2Example = -1
+const p2Example = 12
 
 func main() {
 	if p1 := part1(exampleInput); p1 != p1Example {
 		log.Fatalln("[ERROR]", p1, "!=", p1Example)
 	}
 	fmt.Println("[PART 1 ANSWER]", part1(actualInput))
-	if p2 := part1(exampleInput); p2 != p2Example {
+	if p2 := part2(exampleInput); p2 != p2Example {
 		log.Fatalln("[ERROR]", p2, "!=", p2Example)
 	}
 	fmt.Println("[PART 2 ANSWER]", part2(actualInput))
@@ -28,17 +28,15 @@ func part1(in []segment) int {
 			vm.draw(s)
 		}
 	}
-	var hotspots int
-	for _, count := range vm {
-		if count >= 2 {
-			hotspots++
-		}
-	}
-	return hotspots
+	return vm.countHotspots()
 }
 
 func part2(in []segment) int {
-	return 0
+	vm := make(ventMap)
+	for _, s := range in {
+		vm.draw(s)
+	}
+	return vm.countHotspots()
 }
 
 type ventMap map[point]int
@@ -47,6 +45,16 @@ func (vm ventMap) draw(s segment) {
 	for _, p := range s.points() {
 		vm[p]++
 	}
+}
+
+func (vm ventMap) countHotspots() int {
+	var hotspots int
+	for _, count := range vm {
+		if count >= 2 {
+			hotspots++
+		}
+	}
+	return hotspots
 }
 
 type point struct {
@@ -81,22 +89,51 @@ func max(x int, y int) int {
 
 func (s segment) points() []point {
 	var pts []point
-	for x := min(s.start.x, s.end.x); x <= max(s.start.x, s.end.x); x++ {
-		for y := min(s.start.y, s.end.y); y <= max(s.start.y, s.end.y); y++ {
-			pts = append(pts, point{x, y})
+	if s.isHorizontal() || s.isVertical() {
+		for x := min(s.start.x, s.end.x); x <= max(s.start.x, s.end.x); x++ {
+			for y := min(s.start.y, s.end.y); y <= max(s.start.y, s.end.y); y++ {
+				pts = append(pts, point{x, y})
+			}
+		}
+	} else {
+		if s.start.x > s.end.x && s.start.y < s.end.y { // left down
+			startX := s.start.x
+			for y := s.start.y; y <= s.end.y; y++ {
+				pts = append(pts, point{startX, y})
+				startX--
+			}
+		}
+		if s.start.x < s.end.x && s.start.y < s.end.y { // right down
+			startX := s.start.x
+			for y := s.start.y; y <= s.end.y; y++ {
+				pts = append(pts, point{startX, y})
+				startX++
+			}
+		}
+		if s.start.x > s.end.x && s.start.y > s.end.y { // left up
+			startX := s.start.x
+			for y := s.start.y; y >= s.end.y; y-- {
+				pts = append(pts, point{startX, y})
+				startX--
+			}
+		}
+		if s.start.x < s.end.x && s.start.y > s.end.y { // right up
+			startX := s.start.x
+			for y := s.start.y; y >= s.end.y; y-- {
+				pts = append(pts, point{startX, y})
+				startX++
+			}
 		}
 	}
 	return pts
 }
-
-const inputScanFormat = "%d,%d -> %d,%d"
 
 func processInput(in string) []segment {
 	var out []segment
 	lines := bufio.NewScanner(strings.NewReader(in))
 	for lines.Scan() {
 		var startX, startY, endX, endY int
-		_, err := fmt.Sscanf(lines.Text(), inputScanFormat, &startX, &startY, &endX, &endY)
+		_, err := fmt.Sscanf(lines.Text(), "%d,%d -> %d,%d", &startX, &startY, &endX, &endY)
 		if err != nil {
 			log.Fatalln("Error parsing input", err)
 		}
