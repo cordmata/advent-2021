@@ -96,32 +96,20 @@ func (s segment) points() []point {
 			}
 		}
 	} else {
-		if s.start.x > s.end.x && s.start.y < s.end.y { // left down
-			startX := s.start.x
-			for y := s.start.y; y <= s.end.y; y++ {
-				pts = append(pts, point{startX, y})
-				startX--
-			}
+		yInc := 1                // down
+		if s.start.y > s.end.y { // up
+			yInc = -1
 		}
-		if s.start.x < s.end.x && s.start.y < s.end.y { // right down
-			startX := s.start.x
-			for y := s.start.y; y <= s.end.y; y++ {
-				pts = append(pts, point{startX, y})
-				startX++
+		y := s.start.y
+		if s.start.x > s.end.x { // left
+			for x := s.start.x; x >= s.end.x; x-- {
+				pts = append(pts, point{x, y})
+				y += yInc
 			}
-		}
-		if s.start.x > s.end.x && s.start.y > s.end.y { // left up
-			startX := s.start.x
-			for y := s.start.y; y >= s.end.y; y-- {
-				pts = append(pts, point{startX, y})
-				startX--
-			}
-		}
-		if s.start.x < s.end.x && s.start.y > s.end.y { // right up
-			startX := s.start.x
-			for y := s.start.y; y >= s.end.y; y-- {
-				pts = append(pts, point{startX, y})
-				startX++
+		} else { //right
+			for x := s.start.x; x <= s.end.x; x++ {
+				pts = append(pts, point{x, y})
+				y += yInc
 			}
 		}
 	}
