@@ -14,41 +14,44 @@ const matureLanternFishGestationDays = 6
 const babyLanternFishGestationDays = 8
 
 type school struct {
-	fish []*lanternfish
+	fish map[int]int // counts of fish grouped by due date
 }
 
 func (s *school) elapseDay() {
-	for _, f := range s.fish {
-		_, baby := f.elapseDay()
-		if baby != nil {
-			s.fish = append(s.fish, baby)
+	prevDay := s.fish
+	fish := make(map[int]int)
+	for daysUntilDue, count := range prevDay {
+		if daysUntilDue == 0 {
+			fish[babyLanternFishGestationDays] += count
+			fish[matureLanternFishGestationDays] += count
+		} else {
+			fish[daysUntilDue-1] += count
 		}
 	}
+	s.fish = fish
 }
 
-type lanternfish struct {
-	daysUntilDue int
-}
-
-func (l *lanternfish) elapseDay() (int, *lanternfish) {
-	if l.daysUntilDue == 0 {
-		l.daysUntilDue = matureLanternFishGestationDays
-		return l.daysUntilDue, &lanternfish{babyLanternFishGestationDays}
-	} else {
-		l.daysUntilDue--
-		return l.daysUntilDue, nil
+func (s school) fishCount() int {
+	var numFishies int
+	for _, count := range s.fish {
+		numFishies += count
 	}
+	return numFishies
+}
+
+func simulate(s school, days int) int {
+	for i := 0; i < days; i++ {
+		s.elapseDay()
+	}
+	return s.fishCount()
 }
 
 func part1(s school) int {
-	for i := 0; i < 80; i++ {
-		s.elapseDay()
-	}
-	return len(s.fish)
+	return simulate(s, 80)
 }
 
 func part2(s school) int {
-	return -1
+	return simulate(s, 256)
 }
 
 func main() {
@@ -63,10 +66,10 @@ func main() {
 }
 
 func processInput(in string) school {
-	var fish []*lanternfish
+	fish := make(map[int]int)
 	timers := utils.StringSliceToIntSlice(strings.Split(in, ","))
 	for _, t := range timers {
-		fish = append(fish, &lanternfish{t})
+		fish[t]++
 	}
 	return school{fish}
 }
