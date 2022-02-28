@@ -9,7 +9,7 @@ import (
 )
 
 const p1Example = 37
-const p2Example = 0
+const p2Example = 168
 
 func part1(positions []int) int {
 	var minCost int
@@ -26,7 +26,33 @@ func part1(positions []int) int {
 }
 
 func part2(positions []int) int {
-	return -1
+	var minCost, minPos, maxPos int
+
+	for _, p := range positions {
+		if minPos == 0 || p < minPos {
+			minPos = p
+		}
+		if p > maxPos {
+			maxPos = p
+		}
+	}
+
+	for p := minPos; p < maxPos; p++ {
+		var costAtPostion int
+		for _, o := range positions {
+			distance := abs(p - o)
+			var cost int
+			for i := 1; i <= distance; i++ {
+				cost += i
+			}
+			costAtPostion += cost
+		}
+		if minCost == 0 || costAtPostion < minCost {
+			minCost = costAtPostion
+		}
+	}
+
+	return minCost
 }
 
 func main() {
