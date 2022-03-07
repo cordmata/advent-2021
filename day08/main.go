@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"sort"
 	"strings"
 )
@@ -44,9 +45,8 @@ type display struct {
 
 func (d display) outputValue() int {
 	var wireMappings [10]string
-	var fives []string
-	var sixes []string
-
+	var unmapped []string
+	// we start by mapping the values we know are unique based on their length
 	for _, s := range d.signalSamples {
 		signalLength := len(s)
 		m, ok := digitsUniqLen[signalLength]
@@ -54,35 +54,46 @@ func (d display) outputValue() int {
 			wireMappings[m] = s
 			continue
 		}
-		if signalLength == 5 {
-			fives = append(fives, s)
-		} else {
-			sixes = append(sixes, s)
-		}
+		unmapped = append(unmapped, s)
 	}
 
-	for _, s := range sixes {
-		if !isSubSet(wireMappings[1], s) {
-			wireMappings[6] = s
-			continue
-		}
-		if isSubSet(wireMappings[4], s) {
-			wireMappings[9] = s
-			continue
-		}
-		wireMappings[0] = s
-	}
+	// sort the unmapped by length descending because we need to use certain mappings to deduce later ones
+	sort.Slice(unmapped, func(i, j int) bool {
+		return len(unmapped[i]) > len(unmapped[j])
+	})
 
-	for _, f := range fives {
-		if isSubSet(f, wireMappings[9]) {
-			if isSubSet(wireMappings[1], f) {
-				wireMappings[3] = f
-			} else {
-				wireMappings[5] = f
+	for _, v := range unmapped {
+		if len(v) == 6 {
+
+			// The only value w/ length 6 that doesn't include all segments of 1 is 6.
+			if !isSubSet(wireMappings[1], v) {
+				wireMappings[6] = v
+				continue
 			}
-			continue
+
+			// The only value w/ length 6 that doesn't include all segments of 4 is 9.
+			if isSubSet(wireMappings[4], v) {
+				wireMappings[9] = v
+				continue
+			}
+
+			wireMappings[0] = v
 		}
-		wireMappings[2] = f
+
+		if len(v) == 5 {
+			if isSubSet(v, wireMappings[9]) {
+				// of the values w/ length 5 that share all of their segments with 9, only 3 shares all segments with 1
+				if isSubSet(wireMappings[1], v) {
+					wireMappings[3] = v
+				} else {
+					wireMappings[5] = v
+				}
+				continue
+			}
+
+			wireMappings[2] = v
+		}
+
 	}
 
 	mappingLookup := make(map[string]int)
@@ -90,19 +101,11 @@ func (d display) outputValue() int {
 		mappingLookup[v] = k
 	}
 
+	// calculate the integer value of our output by summing the value times the magnitude of the place value of the slot
 	var out int
 	for i, slot := range d.outputDigits {
 		val := mappingLookup[slot]
-		switch i {
-		case 0:
-			out += val * 1000
-		case 1:
-			out += val * 100
-		case 2:
-			out += val * 10
-		case 3:
-			out += val
-		}
+		out += val * int(math.Pow10(len(d.outputDigits)-1-i))
 	}
 	return out
 }
