@@ -3,18 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 )
 
 const p1Example = 26
-const p2Example = -1
+const p2Example = 61229
 
 func part1(displays []display) int {
-	uniqLen := map[int]bool{2: true, 3: true, 4: true, 7: true}
 	var numUniqLen int
 	for _, d := range displays {
-		for _, o := range d.outputValue {
-			if _, ok := uniqLen[len(o)]; ok {
+		for _, o := range d.outputDigits {
+			if _, ok := digitsUniqLen[len(o)]; ok {
 				numUniqLen++
 			}
 		}
@@ -23,12 +23,106 @@ func part1(displays []display) int {
 }
 
 func part2(displays []display) int {
-	return 0
+	var outputsum int
+	for _, d := range displays {
+		outputsum += d.outputValue()
+	}
+	return outputsum
+}
+
+var digitsUniqLen = map[int]int{
+	2: 1,
+	3: 7,
+	4: 4,
+	7: 8,
 }
 
 type display struct {
 	signalSamples []string
-	outputValue   []string
+	outputDigits  []string
+}
+
+func (d display) outputValue() int {
+	var wireMappings [10]string
+	var fives []string
+	var sixes []string
+
+	for _, s := range d.signalSamples {
+		signalLength := len(s)
+		m, ok := digitsUniqLen[signalLength]
+		if ok {
+			wireMappings[m] = s
+			continue
+		}
+		if signalLength == 5 {
+			fives = append(fives, s)
+		} else {
+			sixes = append(sixes, s)
+		}
+	}
+
+	for _, s := range sixes {
+		if !isSubSet(wireMappings[1], s) {
+			wireMappings[6] = s
+			continue
+		}
+		if isSubSet(wireMappings[4], s) {
+			wireMappings[9] = s
+			continue
+		}
+		wireMappings[0] = s
+	}
+
+	for _, f := range fives {
+		if isSubSet(f, wireMappings[9]) {
+			if isSubSet(wireMappings[1], f) {
+				wireMappings[3] = f
+			} else {
+				wireMappings[5] = f
+			}
+			continue
+		}
+		wireMappings[2] = f
+	}
+
+	mappingLookup := make(map[string]int)
+	for k, v := range wireMappings {
+		mappingLookup[v] = k
+	}
+
+	var out int
+	for i, slot := range d.outputDigits {
+		val := mappingLookup[slot]
+		switch i {
+		case 0:
+			out += val * 1000
+		case 1:
+			out += val * 100
+		case 2:
+			out += val * 10
+		case 3:
+			out += val
+		}
+	}
+	return out
+}
+
+func sortString(w string) string {
+	s := strings.Split(w, "")
+	sort.Strings(s)
+	return strings.Join(s, "")
+}
+
+func isSubSet(a string, b string) bool {
+	if len(a) > len(b) {
+		return false
+	}
+	for _, r := range a {
+		if !strings.ContainsRune(b, r) {
+			return false
+		}
+	}
+	return true
 }
 
 func main() {
@@ -47,10 +141,19 @@ func processInput(in string) []display {
 	lines := strings.Split(in, "\n")
 	for _, line := range lines {
 		l := strings.Split(line, "|")
-		displays = append(displays, display{
-			signalSamples: strings.Fields(l[0]),
-			outputValue:   strings.Fields(l[1]),
-		})
+
+		// since order doesn't matter, pre-sort the values so they can be compared and used as map keys
+		var samples []string
+		for _, v := range strings.Fields(l[0]) {
+			samples = append(samples, sortString(v))
+		}
+
+		var outDigits []string
+		for _, v := range strings.Fields(l[1]) {
+			outDigits = append(outDigits, sortString(v))
+		}
+
+		displays = append(displays, display{samples, outDigits})
 	}
 	return displays
 }
