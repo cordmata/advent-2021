@@ -80,19 +80,17 @@ func (d display) outputValue() int {
 			wireMappings[0] = v
 		}
 
-		if len(v) == 5 {
-			if isSubSet(v, wireMappings[9]) {
-				// of the values w/ length 5 that share all of their segments with 9, only 3 shares all segments with 1
-				if isSubSet(wireMappings[1], v) {
-					wireMappings[3] = v
-				} else {
-					wireMappings[5] = v
-				}
-				continue
+		if isSubSet(v, wireMappings[9]) {
+			// of the values w/ length 5 that share all of their segments with 9, only 3 shares all segments with 1
+			if isSubSet(wireMappings[1], v) {
+				wireMappings[3] = v
+			} else {
+				wireMappings[5] = v
 			}
-
-			wireMappings[2] = v
+			continue
 		}
+
+		wireMappings[2] = v
 
 	}
 
