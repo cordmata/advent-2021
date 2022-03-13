@@ -3,32 +3,17 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	"github.com/cordmata/advent-2021/utils"
 )
 
-type heightmap [][]int
+const maxHeight = 9
 
-func (m heightmap) findNeighbors(x int, y int) []int {
-	var neighbors []int
-	//left
-	if x > 0 {
-		neighbors = append(neighbors, m[y][x-1])
-	}
-	//right
-	if x < m.width()-1 {
-		neighbors = append(neighbors, m[y][x+1])
-	}
-	//up
-	if y > 0 {
-		neighbors = append(neighbors, m[y-1][x])
-	}
-	//down
-	if y < m.height()-1 {
-		neighbors = append(neighbors, m[y+1][x])
-	}
-	return neighbors
+type heightmap [][]int
+type coord struct {
+	x, y, height int
 }
 
 func (m heightmap) width() int {
@@ -39,28 +24,96 @@ func (m heightmap) height() int {
 	return len(m)
 }
 
-func part1(input heightmap) int {
-	var totalRiskLevel int
-	for y := 0; y < input.height(); y++ {
-		for x := 0; x < input.width(); x++ {
-			val := input[y][x]
-			neighbors := input.findNeighbors(x, y)
-			minNeighbor := neighbors[0]
-			for _, n := range neighbors[1:] {
-				if n < minNeighbor {
-					minNeighbor = n
-				}
+func (m heightmap) pointAt(x int, y int) coord {
+	return coord{x, y, m[y][x]}
+}
+
+func (m heightmap) neighbors(p coord) []coord {
+	var neighbors []coord
+	//left
+	if p.x > 0 {
+		neighbors = append(neighbors, m.pointAt(p.x-1, p.y))
+	}
+	//right
+	if p.x < m.width()-1 {
+		neighbors = append(neighbors, m.pointAt(p.x+1, p.y))
+	}
+	//up
+	if p.y > 0 {
+		neighbors = append(neighbors, m.pointAt(p.x, p.y-1))
+	}
+	//down
+	if p.y < m.height()-1 {
+		neighbors = append(neighbors, m.pointAt(p.x, p.y+1))
+	}
+	return neighbors
+}
+
+func (m heightmap) iter(pointFunc func(coord)) {
+	for y, row := range m {
+		for x, height := range row {
+			pointFunc(coord{x, y, height})
+		}
+	}
+}
+
+func (m heightmap) basin(p coord) []coord {
+	basin := make(map[coord]bool)
+	neighborsToCheck := m.neighbors(p)
+	for len(neighborsToCheck) != 0 {
+		var newNeighbors []coord
+		for _, n := range neighborsToCheck {
+			if _, ok := basin[n]; ok { // already in the basin
+				continue
 			}
-			if val < minNeighbor {
-				totalRiskLevel += val + 1
+			if n.height != maxHeight {
+				basin[n] = true
+				newNeighbors = append(newNeighbors, m.neighbors(n)...)
 			}
 		}
+		neighborsToCheck = newNeighbors
+	}
+	var bcoords []coord
+	for c := range basin {
+		bcoords = append(bcoords, c)
+	}
+	return bcoords
+}
+
+func (m heightmap) lowPoints() []coord {
+	var lowPoints []coord
+	m.iter(func(p coord) {
+		neighbors := m.neighbors(p)
+		minNeighbor := neighbors[0]
+		for _, n := range neighbors[1:] {
+			if n.height < minNeighbor.height {
+				minNeighbor = n
+			}
+		}
+		if p.height < minNeighbor.height {
+			lowPoints = append(lowPoints, p)
+		}
+	})
+	return lowPoints
+}
+
+func part1(input heightmap) int {
+	var totalRiskLevel int
+	for _, point := range input.lowPoints() {
+		totalRiskLevel += point.height + 1
 	}
 	return totalRiskLevel
 }
 
 func part2(input heightmap) int {
-	return -1
+	var basins [][]coord
+	for _, p := range input.lowPoints() {
+		basins = append(basins, input.basin(p))
+	}
+	sort.Slice(basins, func(i, j int) bool {
+		return len(basins[i]) > len(basins[j])
+	})
+	return len(basins[0]) * len(basins[1]) * len(basins[2])
 }
 
 func processInput(s string) heightmap {
@@ -81,7 +134,7 @@ func main() {
 	}
 	fmt.Println("The answer to part 1 is:", part1(actualInput))
 
-	p2Example := 0
+	p2Example := 1134
 	if r := part2(exampleInput); r != p2Example {
 		log.Fatalf("[PART 2]: expected %d, got %d", p2Example, r)
 	}
