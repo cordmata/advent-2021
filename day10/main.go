@@ -39,11 +39,11 @@ func parseLine(line string) parseResult {
 	var stack stack
 	var result parseResult
 	for _, c := range line {
-		if c == '(' || c == '[' || c == '{' || c == '<' {
+		if _, isStarter := chunkStarters[c]; isStarter {
 			stack.push(c)
 			continue
 		}
-		if info, ok := chunkEndings[c]; ok && !stack.empty() {
+		if info, isCloser := chunkClosers[c]; isCloser && !stack.empty() {
 			potentialMatch := stack.pop()
 			if potentialMatch != info.startingMatch {
 				result.unmatchedScore = info.pointsUnmatched
@@ -93,7 +93,7 @@ func part2(input []string) int {
 	for _, v := range completions {
 		var score int
 		for _, r := range v {
-			endInfo := chunkEndings[r]
+			endInfo := chunkClosers[r]
 			score *= 5
 			score += endInfo.pointsMatched
 		}
@@ -120,7 +120,7 @@ var chunkStarters = map[rune]rune{
 	'<': '>',
 }
 
-var chunkEndings = map[rune]endChunkInfo{
+var chunkClosers = map[rune]endChunkInfo{
 	')': {'(', 3, 1},
 	']': {'[', 57, 2},
 	'}': {'{', 1197, 3},
