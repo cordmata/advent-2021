@@ -1,14 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 )
 
 const p1Example = 26397
-const p2Example = -1
+const p2Example = 288957
 
 type stack struct {
 	chars []rune
@@ -18,48 +18,89 @@ func (s *stack) push(r rune) {
 	s.chars = append(s.chars, r)
 }
 
-func (s *stack) pop() (rune, error) {
+func (s *stack) pop() rune {
 	var out rune
-	if s.empty() {
-		return out, errors.New("stack is empty")
-	}
 	stacklen := len(s.chars) - 1
 	out = s.chars[stacklen]
 	s.chars = s.chars[:stacklen]
-	return out, nil
+	return out
 }
 
 func (s *stack) empty() bool {
 	return len(s.chars) <= 0
 }
 
-func part1(input []string) int {
+type parseResult struct {
+	incomplete     stack
+	unmatchedScore int
+}
+
+func parseLine(line string) parseResult {
 	var stack stack
-	var score int
-lines:
-	for _, line := range input {
-		for _, c := range line {
-			if c == '(' || c == '[' || c == '{' || c == '<' {
-				stack.push(c)
-				continue
-			}
-			if info, ok := chunkEndings[c]; ok && !stack.empty() {
-				potentialMatch, err := stack.pop()
-				if err != nil {
-					log.Fatalln("stack shouldn't be empty")
-				}
-				if potentialMatch != info.startingMatch {
-					score += info.pointsUnmatched
-					continue lines
-				}
+	var result parseResult
+	for _, c := range line {
+		if c == '(' || c == '[' || c == '{' || c == '<' {
+			stack.push(c)
+			continue
+		}
+		if info, ok := chunkEndings[c]; ok && !stack.empty() {
+			potentialMatch := stack.pop()
+			if potentialMatch != info.startingMatch {
+				result.unmatchedScore = info.pointsUnmatched
+				break
 			}
 		}
+	}
+	if result.unmatchedScore == 0 {
+		result.incomplete = stack
+	}
+	return result
+}
+
+func part1(input []string) int {
+	var score int
+	for _, line := range input {
+		r := parseLine(line)
+		score += r.unmatchedScore
 	}
 	return score
 }
 
 func part2(input []string) int {
-	return 0
+	var incomplete []stack
+	for _, line := range input {
+		r := parseLine(line)
+		if !r.incomplete.empty() {
+			incomplete = append(incomplete, r.incomplete)
+		}
+	}
+
+	var completions [][]rune
+	for _, s := range incomplete {
+		var comp []rune
+		for !s.empty() {
+			starter := s.pop()
+			if end, ok := chunkStarters[starter]; ok {
+				comp = append(comp, end)
+				continue
+			}
+			log.Fatalln("shouldn't make it here")
+		}
+		completions = append(completions, comp)
+	}
+
+	var scores []int
+	for _, v := range completions {
+		var score int
+		for _, r := range v {
+			endInfo := chunkEndings[r]
+			score *= 5
+			score += endInfo.pointsMatched
+		}
+		scores = append(scores, score)
+	}
+	sort.Ints(scores)
+	return scores[len(scores)/2]
 }
 
 func processInput(s string) []string {
@@ -69,13 +110,21 @@ func processInput(s string) []string {
 type endChunkInfo struct {
 	startingMatch   rune
 	pointsUnmatched int
+	pointsMatched   int
+}
+
+var chunkStarters = map[rune]rune{
+	'(': ')',
+	'[': ']',
+	'{': '}',
+	'<': '>',
 }
 
 var chunkEndings = map[rune]endChunkInfo{
-	')': {'(', 3},
-	']': {'[', 57},
-	'}': {'{', 1197},
-	'>': {'<', 25137},
+	')': {'(', 3, 1},
+	']': {'[', 57, 2},
+	'}': {'{', 1197, 3},
+	'>': {'<', 25137, 4},
 }
 
 func main() {
